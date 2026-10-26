@@ -1,8 +1,8 @@
 #!/bin/bash
 # Linux x86-64 builds of the library for Dungeon Ultimate (fork timoncool/stable-diffusion.cpp, branch studio):
-# Ubuntu 22.04 (glibc 2.35), shared libstable-diffusion.so with its ggml beside it (RUNPATH $ORIGIN), the CPU backend
-# in runtime-dispatched variants (no GGML_NATIVE), CUDA 12.9 with SASS for every architecture and no PTX; libgomp,
-# which the CPU backend needs, is copied beside them.
+# Ubuntu 22.04 (glibc 2.35), one shared libstable-diffusion.so with ggml linked in and not exported, the CPU code on
+# the AVX2 floor (no GGML_NATIVE), CUDA 12.9 with SASS for every architecture and no PTX; libgomp, which the CPU
+# backend needs, is copied beside it (RUNPATH $ORIGIN).
 #   scripts/build-linux-docker.sh <output folder> <cache folder> <cuda12|vulkan|cpu>
 set -euo pipefail
 
@@ -42,8 +42,13 @@ if [ "${1:-}" = "--inside" ]; then
   cp -a /src/. /cache/src-$build/
   cd /cache/src-$build
   echo "[..] source $(git -c safe.directory='*' rev-parse --short HEAD)"
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSD_BUILD_SHARED_LIBS=ON -DSD_BUILD_SHARED_GGML_LIB=ON \
-    -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
+  # one library: ggml linked in and kept to itself (hidden, --exclude-libs), so another ggml in the process (Qwen3-TTS)
+  # cannot bind to it; the CPU code on the AVX2, FMA, F16C and BMI2 floor without runtime variants
+  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSD_BUILD_SHARED_LIBS=ON -DSD_BUILD_SHARED_GGML_LIB=OFF \
+    -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=OFF -DGGML_CPU_ALL_VARIANTS=OFF \
+    -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_BMI2=ON -DGGML_AVX512=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_C_VISIBILITY_PRESET=hidden -DCMAKE_CXX_VISIBILITY_PRESET=hidden \
+    "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--exclude-libs,ALL" \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON "-DCMAKE_INSTALL_RPATH=\$ORIGIN" "${flags[@]}" > /out/cmake-$build.log 2>&1 \
     || { echo "[ERROR] cmake"; tail -30 /out/cmake-$build.log; exit 1; }
   cmake --build build --config Release -j 8 > /out/build-$build.log 2>&1 || { echo "[ERROR] build"; tail -40 /out/build-$build.log; exit 1; }
