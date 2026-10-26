@@ -14,8 +14,10 @@ if [ "${1:-}" = "--inside" ]; then
   apt-get install -y -q --no-install-recommends build-essential cmake git ca-certificates file >/dev/null
   case "$build" in
     cuda12)
-      # NCCL is not on a user's machine: with it on libggml-cuda needs libnccl.so.2
-      flags=(-DSD_CUDA=ON -DGGML_CUDA_NCCL=OFF "-DCMAKE_CUDA_ARCHITECTURES=52-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;120a-real")
+      # NCCL is not on a user's machine: with it on libggml-cuda needs libnccl.so.2. cudart and cuBLAS 12 come from the
+      # game's CUDA 12.9 runtime, models/cuda12-runtime, two folders up from models/runtime/sd
+      flags=(-DSD_CUDA=ON -DGGML_CUDA_NCCL=OFF "-DCMAKE_CUDA_ARCHITECTURES=52-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;120a-real"
+        "-DCMAKE_INSTALL_RPATH=\$ORIGIN;\$ORIGIN/../../cuda12-runtime")
       ;;
     vulkan)
       # Ubuntu 22.04 has no glslc and older Vulkan and SPIR-V headers than ggml wants: LunarG's SDK has all three,
