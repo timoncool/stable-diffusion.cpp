@@ -16,8 +16,18 @@ if [ "${1:-}" = "--inside" ]; then
       flags=(-DSD_CUDA=ON "-DCMAKE_CUDA_ARCHITECTURES=52-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;120a-real")
       ;;
     vulkan)
-      apt-get install -y -q --no-install-recommends libvulkan-dev glslc spirv-headers >/dev/null
-      flags=(-DSD_VULKAN=ON)
+      # Ubuntu 22.04 has no glslc and older Vulkan and SPIR-V headers than ggml wants: LunarG's SDK has all three,
+      # the loader linked against stays the system libvulkan.so.1
+      apt-get install -y -q --no-install-recommends libvulkan-dev curl xz-utils >/dev/null
+      vulkan=1.4.363.0
+      sdk=/cache/vulkansdk-$vulkan
+      if [ ! -x "$sdk/x86_64/bin/glslc" ]; then
+        echo "[..] Vulkan SDK $vulkan"
+        mkdir -p "$sdk"
+        curl -sSfL "https://sdk.lunarg.com/sdk/download/$vulkan/linux/vulkansdk-linux-x86_64-$vulkan.tar.xz" | tar -xJ -C "$sdk" --strip-components=1
+      fi
+      export VULKAN_SDK="$sdk/x86_64" PATH="$sdk/x86_64/bin:$PATH"
+      flags=(-DSD_VULKAN=ON "-DCMAKE_PREFIX_PATH=$VULKAN_SDK")
       ;;
     cpu)
       flags=()
