@@ -1,7 +1,8 @@
 #!/bin/bash
 # Linux x86-64 builds of the library for Dungeon Ultimate (fork timoncool/stable-diffusion.cpp, branch studio):
 # Ubuntu 22.04 (glibc 2.35), shared libstable-diffusion.so with its ggml beside it (RUNPATH $ORIGIN), the CPU backend
-# in runtime-dispatched variants (no GGML_NATIVE), CUDA 12.9 with SASS for every architecture and no PTX.
+# in runtime-dispatched variants (no GGML_NATIVE), CUDA 12.9 with SASS for every architecture and no PTX; libgomp,
+# which the CPU backend needs, is copied beside them.
 #   scripts/build-linux-docker.sh <output folder> <cache folder> <cuda12|vulkan|cpu>
 set -euo pipefail
 
@@ -45,6 +46,7 @@ if [ "${1:-}" = "--inside" ]; then
   cmake --build build --config Release -j 8 > /out/build-$build.log 2>&1 || { echo "[ERROR] build"; tail -40 /out/build-$build.log; exit 1; }
   stage=/cache/stage-$build && rm -rf "$stage" && mkdir -p "$stage"
   find build -name '*.so*' \( -type f -o -type l \) -exec cp -a {} "$stage/" \;
+  cp "$(gcc -print-file-name=libgomp.so.1)" "$stage/"
   ls -la "$stage"
   commit="$(git -c safe.directory='*' rev-parse --short=7 HEAD)"
   name="sd-${commit}-linux-${build}-x64.tar.gz"
