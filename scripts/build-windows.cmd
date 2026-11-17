@@ -26,7 +26,7 @@ goto :setup_%BACKEND%
 set "CUDA_PATH=D:\Projects\_tools\cuda-12.9"
 call "%VCVARS%" -vcvars_ver=14.44 >nul
 set "PATH=D:\Projects\_tools\cuda-12.9\bin;%PATH%"
-set "FLAGS=-DSD_CUDA=ON -DGGML_CUDA_NCCL=OFF -DCMAKE_CUDA_RUNTIME_LIBRARY=Static -DCUDAToolkit_ROOT=D:/Projects/_tools/cuda-12.9 -DCMAKE_CUDA_COMPILER=D:/Projects/_tools/cuda-12.9/bin/nvcc.exe -DCMAKE_CUDA_FLAGS=-Wno-deprecated-gpu-targets -DCMAKE_CUDA_ARCHITECTURES=52-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;120a-real"
+set "FLAGS=-DSD_CUDA=ON -DGGML_STATIC=ON -DGGML_CUDA_NCCL=OFF -DCMAKE_CUDA_RUNTIME_LIBRARY=Static -DCUDAToolkit_ROOT=D:/Projects/_tools/cuda-12.9 -DCMAKE_CUDA_COMPILER=D:/Projects/_tools/cuda-12.9/bin/nvcc.exe -DCMAKE_CUDA_FLAGS=-Wno-deprecated-gpu-targets -DCMAKE_CUDA_ARCHITECTURES=52-real;61-real;70-real;75-real;80-real;86-real;89-real;90-real;120a-real"
 goto :configure
 
 :setup_vulkan
